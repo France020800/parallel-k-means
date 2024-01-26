@@ -55,18 +55,27 @@ void print_centroids(vector<Point> centroids)
 
 int main(int argc, char const *argv[])
 {
-    if (argc != 3)
+    if (argc < 3)
     {
         printf("Error: command-line argument count mismatch. \n ./k-means <K> <num_points> \n");
         return 1;
     }
 
     // Seed the random number generator
-    random_device rd;
-    mt19937 gen(rd());
+    std::mt19937 gen;
+    if (argc == 4)
+    {
+        unsigned int seed = atoi(argv[3]); // Change this to any desired seed value
+        gen = std::mt19937(seed);
+    }
+    else
+    {
+        random_device rd;
+        gen = std::mt19937(rd());
+    }
 
     // Define the distribution (0 to 100 inclusive)
-    uniform_int_distribution<int> distribution(0, 100);
+    uniform_int_distribution<int> distribution(0, 100000);
 
     // Create a random list of num_points points
     int num_points = atoi(argv[2]);
@@ -86,14 +95,14 @@ int main(int argc, char const *argv[])
         centroids.push_back(points[random_index]);
     }
 
-    printf("Initial centroids:\n");
-    print_centroids(centroids);
+    // printf("Initial centroids:\n");
+    // print_centroids(centroids);
 
     int num_threads = omp_get_max_threads();
     omp_set_num_threads(num_threads);
 
     // Start the timer
-    auto start = chrono::high_resolution_clock::now();
+    // auto start = chrono::high_resolution_clock::now();
 
     bool complete = false;
     int iter = 0;
@@ -147,17 +156,18 @@ int main(int argc, char const *argv[])
         iter++;
     }
 
-    printf("Final centroids:\n");
-    print_centroids(centroids);
+    // printf("Final centroids:\n");
+    // print_centroids(centroids);
 
     // Stop the timer
-    auto stop = chrono::high_resolution_clock::now();
+    // auto stop = chrono::high_resolution_clock::now();
 
     // Calculate the execution time
-    std::chrono::duration<double> duration = stop - start;
+    // std::chrono::duration<double> duration = stop - start;
 
-    printf("Program complete after %d iterations.\n", iter);
-    printf("Execution time: %.8f seconds\n", duration.count());
+    // printf("Program complete after %d iterations.\n", iter);
+    // printf("Execution time: %.4f seconds\n", duration.count());
+    printf("%d", iter);
 
     return 0;
 }
