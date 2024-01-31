@@ -63,7 +63,7 @@ int main(int argc, char const *argv[])
 
     // Seed the random number generator
     std::mt19937 gen;
-    if (argc == 4)
+    if (argc >= 4)
     {
         unsigned int seed = atoi(argv[3]); // Change this to any desired seed value
         gen = std::mt19937(seed);
@@ -73,6 +73,15 @@ int main(int argc, char const *argv[])
         random_device rd;
         gen = std::mt19937(rd());
     }
+
+    if (argc == 5)
+    {
+        omp_set_num_threads(atoi(argv[4]));
+    } else {
+        int num_threads = omp_get_max_threads();
+        omp_set_num_threads(num_threads);
+    }
+    
 
     // Define the distribution (0 to 100 inclusive)
     uniform_int_distribution<int> distribution(0, 100000);
@@ -97,9 +106,6 @@ int main(int argc, char const *argv[])
 
     // printf("Initial centroids:\n");
     // print_centroids(centroids);
-
-    int num_threads = omp_get_max_threads();
-    omp_set_num_threads(num_threads);
 
     // Start the timer
     // auto start = chrono::high_resolution_clock::now();
@@ -147,7 +153,7 @@ int main(int argc, char const *argv[])
                     count++;
                 }
             }
-            if (centroids[i].get_x() != sum_x / count || centroids[i].get_y() != sum_y / count)
+            if (centroids[i].get_x() != sum_x / count || centroids[i].get_y() != sum_y / count, centroids[i].get_z() != sum_z / count)
             {
                 complete = false;
                 centroids[i] = Point(sum_x / count, sum_y / count, sum_z / count);

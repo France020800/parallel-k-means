@@ -139,7 +139,7 @@ int main(int argc, char const *argv[])
                     count++;
                 }
             }
-            if (centroids[i].get_x() != sum_x / count || centroids[i].get_y() != sum_y / count)
+            if (centroids[i].get_x() != sum_x / count || centroids[i].get_y() != sum_y / count, centroids[i].get_z() != sum_z / count)
             {
                 complete = false;
                 centroids[i] = Point(sum_x / count, sum_y / count, sum_z / count);
