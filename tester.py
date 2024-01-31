@@ -21,10 +21,11 @@ def run_parallel(random_seed, num_threads):
 speedups = []
 # Generate a random seed
 random_seed = random.randint(0, 2**32 - 1)
+outS, sequential_time = run_sequential(random_seed)
 for i in range(1, 17):
-    outS, sequential_time = run_sequential(random_seed)
     outP, parallel_time = run_parallel(random_seed, i)
     speedups.append(round(sequential_time/parallel_time, 4))
+    print(f'Speedup: {speedups[i-1]}\nThreads number: {i}')
     with open("result.txt", "a") as file:
         file.write("Speedup: {}s\n".format(speedups[i-1]))
         file.write("Threads number: {}\n".format(i))
