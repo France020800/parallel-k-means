@@ -10,38 +10,35 @@ using namespace std;
 
 class Point
 {
-private:
-    int x;
-    int y;
-    int z;
+public:
+    double x;
+    double y;
+    double z;
     int clusterId;
 
 public:
-    Point(int x, int y, int z)
+    Point(double x, double y, double z)
     {
         this->x = x;
         this->y = y;
         this->z = z;
     }
-    int get_x()
+};
+
+class Centroid
+{
+public:
+    double x;
+    double y;
+    double z;
+    int num_points;
+
+public:
+    Centroid(double x, double y, double z)
     {
-        return this->x;
-    }
-    int get_y()
-    {
-        return this->y;
-    }
-    int get_z()
-    {
-        return this->z;
-    }
-    int get_clusterId()
-    {
-        return this->clusterId;
-    }
-    void set_clusterId(int clusterId)
-    {
-        this->clusterId = clusterId;
+        this->x = x;
+        this->y = y;
+        this->z = z;
     }
 };
 
@@ -49,7 +46,7 @@ void print_centroids(vector<Point> centroids)
 {
     for (int i = 0; i < centroids.size(); i++)
     {
-        printf("Centroid %d: (%d, %d)\n", i, centroids[i].get_x(), centroids[i].get_y());
+        printf("Centroid %d: (%d, %d)\n", i, centroids[i].x, centroids[i].y);
     }
 }
 
@@ -63,7 +60,8 @@ int main(int argc, char const *argv[])
 
     // Seed the random number generator
     std::mt19937 gen;
-    if (argc >= 4)
+
+    if (argc <= 4)
     {
         unsigned int seed = atoi(argv[3]); // Change this to any desired seed value
         gen = std::mt19937(seed);
@@ -74,19 +72,21 @@ int main(int argc, char const *argv[])
         gen = std::mt19937(rd());
     }
 
+    int num_threads;
     if (argc == 5)
     {
-        omp_set_num_threads(atoi(argv[4]));
-    } else {
+        num_threads = atoi(argv[4]);
+    }
+    else
+    {
         int num_threads = omp_get_max_threads();
         omp_set_num_threads(num_threads);
     }
-    
 
-    // Define the distribution (0 to 100 inclusive)
-    uniform_int_distribution<int> distribution(0, 100000);
+    // Define the distribution
+    uniform_real_distribution<double> distribution(0.0, 1000000.0);
 
-    // Create a random list of num_points points
+    // Create a random list of num_point points
     int num_points = atoi(argv[2]);
     vector<Point> points;
     for (int i = 0; i < num_points; i++)
@@ -94,85 +94,72 @@ int main(int argc, char const *argv[])
         points.push_back(Point(distribution(gen), distribution(gen), distribution(gen)));
     }
 
-    // Declare k random points as centroids
+    // Create k random centroids
     int K = atoi(argv[1]);
-    vector<Point> centroids;
+    vector<Centroid> centroids;
     for (int i = 0; i < K; i++)
     {
         // Get K random points from the list of points
         int random_index = rand() % points.size();
-        centroids.push_back(points[random_index]);
+        centroids.push_back(Centroid(points[random_index].x,
+                                     points[random_index].y,
+                                     points[random_index].z));
     }
-
-    // printf("Initial centroids:\n");
-    // print_centroids(centroids);
 
     // Start the timer
     // auto start = chrono::high_resolution_clock::now();
 
-    bool complete = false;
     int iter = 0;
-    while (!complete)
+    bool changed = true;
+    while (changed)
     {
-        // Assign each point to a centroid
-        #pragma omp parallel for
+        #pragma omp parallel shared(points, centroids, changed)
+        changed = false;
+        #pragma omp for
         for (int i = 0; i < points.size(); i++)
         {
-            int min_distance = 1000000;
-            int min_index = 0;
-            #pragma omp parallel for reduction(min:min_distance) shared(min_index)
-            for (int j = 0; j < K; j++)
+            double min_distance = INFINITY;
+            int centroid_index = -1;
+            for (int j = 0; j < centroids.size(); j++)
             {
-                int distance = (int)sqrt(pow(points[i].get_x() - centroids[j].get_x(), 2) + pow(points[i].get_y() - centroids[j].get_y(), 2) + pow(points[i].get_z() - centroids[j].get_z(), 2));
+                double distance = pow(points[i].x - centroids[j].x, 2) +
+                                  pow(points[i].y - centroids[j].y, 2) +
+                                  pow(points[i].z - centroids[j].z, 2);
                 if (distance < min_distance)
                 {
                     min_distance = distance;
-                    min_index = j;
+                    centroid_index = j;
                 }
             }
-            points[i].set_clusterId(min_index);
-        }
+            if (centroid_index != points[i].clusterId)
+            {
+                points[i].clusterId = centroid_index;
+                changed = true;
+            }
 
-        // Recalculate the centroids
-        complete = true;
-        #pragma omp parallel for
-        for (int i = 0; i < K; i++)
-        {
-            int sum_x = 0;
-            int sum_y = 0;
-            int sum_z = 0;
-            int count = 0;
-            #pragma omp parallel for reduction(+:sum_x,sum_y,sum_z,count)
-            for (int j = 0; j < points.size(); j++)
-            {
-                if (points[j].get_clusterId() == i)
-                {
-                    sum_x += points[j].get_x();
-                    sum_y += points[j].get_y();
-                    sum_z += points[j].get_z();
-                    count++;
-                }
-            }
-            if (centroids[i].get_x() != sum_x / count || centroids[i].get_y() != sum_y / count, centroids[i].get_z() != sum_z / count)
-            {
-                complete = false;
-                centroids[i] = Point(sum_x / count, sum_y / count, sum_z / count);
-            }
+            centroids[centroid_index].x = centroids[centroid_index].x + points[i].x;
+            centroids[centroid_index].y = centroids[centroid_index].y + points[i].y;
+            centroids[centroid_index].z = centroids[centroid_index].z + points[i].z;
+            centroids[centroid_index].num_points += 1;
         }
-        iter++;
+        if (changed)
+        {
+            #pragma omp single
+            centroids = vector<Centroid>(K, Centroid(0, 0, 0));
+
+            for (int i = 0; i < centroids.size(); i++)
+            {
+                #pragma omp atomic update
+                centroids[i].x /= centroids[i].num_points;
+                #pragma omp atomic update
+                centroids[i].y /= centroids[i].num_points;
+                #pragma omp atomic update
+                centroids[i].z /= centroids[i].num_points;
+            }
+            iter++;
+        }
     }
 
-    // printf("Final centroids:\n");
-    // print_centroids(centroids);
-
-    // Stop the timer
-    // auto stop = chrono::high_resolution_clock::now();
-
-    // Calculate the execution time
-    // std::chrono::duration<double> duration = stop - start;
-
-    // printf("Program complete after %d iterations.\n", iter);
-    // printf("Execution time: %.4f seconds\n", duration.count());
     printf("%d", iter);
 
     return 0;
