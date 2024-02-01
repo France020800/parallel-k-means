@@ -17,11 +17,12 @@ public:
     int clusterId;
 
 public:
-    Point(double x, double y, double z)
+    Point(double x, double y, double z, int cluster)
     {
         this->x = x;
         this->y = y;
         this->z = z;
+        this->clusterId = cluster;
     }
 };
 
@@ -61,37 +62,38 @@ int main(int argc, char const *argv[])
     // Seed the random number generator
     std::mt19937 gen;
 
-    if (argc <= 4)
+    if (argc < 4)
+    {
+        random_device rd;
+        gen = std::mt19937(rd());
+        
+    }
+    else
     {
         unsigned int seed = atoi(argv[3]); // Change this to any desired seed value
         gen = std::mt19937(seed);
     }
-    else
-    {
-        random_device rd;
-        gen = std::mt19937(rd());
-    }
 
-    int num_threads;
     if (argc == 5)
     {
-        num_threads = atoi(argv[4]);
+        omp_set_num_threads(atoi(argv[4]));
     }
     else
     {
         int num_threads = omp_get_max_threads();
         omp_set_num_threads(num_threads);
     }
+    printf("Number of threads: %d\n", omp_get_max_threads());
 
     // Define the distribution
-    uniform_real_distribution<double> distribution(0.0, 1000000.0);
+    uniform_real_distribution<double> distribution(0.0, 1000.0);
 
     // Create a random list of num_point points
     int num_points = atoi(argv[2]);
     vector<Point> points;
     for (int i = 0; i < num_points; i++)
     {
-        points.push_back(Point(distribution(gen), distribution(gen), distribution(gen)));
+        points.push_back(Point(distribution(gen), distribution(gen), distribution(gen), -2));
     }
 
     // Create k random centroids
@@ -106,16 +108,15 @@ int main(int argc, char const *argv[])
                                      points[random_index].z));
     }
 
-    // Start the timer
-    // auto start = chrono::high_resolution_clock::now();
-
+    vector<Centroid> cumulate_centroids;
+    cumulate_centroids.resize(K, Centroid(0, 0, 0));
+    
     int iter = 0;
     bool changed = true;
     while (changed)
     {
-        #pragma omp parallel shared(points, centroids, changed)
         changed = false;
-        #pragma omp for
+        #pragma omp parallel for shared(centroids, cumulate_centroids, points) reduction(||:changed)
         for (int i = 0; i < points.size(); i++)
         {
             double min_distance = INFINITY;
@@ -137,27 +138,26 @@ int main(int argc, char const *argv[])
                 changed = true;
             }
 
-            centroids[centroid_index].x = centroids[centroid_index].x + points[i].x;
-            centroids[centroid_index].y = centroids[centroid_index].y + points[i].y;
-            centroids[centroid_index].z = centroids[centroid_index].z + points[i].z;
-            centroids[centroid_index].num_points += 1;
+            cumulate_centroids[centroid_index].x += points[i].x;
+            cumulate_centroids[centroid_index].y += points[i].y;
+            cumulate_centroids[centroid_index].z += points[i].z;
+            cumulate_centroids[centroid_index].num_points += 1;
         }
+        #pragma omp barrier
         if (changed)
         {
-            #pragma omp single
-            centroids = vector<Centroid>(K, Centroid(0, 0, 0));
-
+            #pragma omp parallel for
             for (int i = 0; i < centroids.size(); i++)
             {
-                #pragma omp atomic update
-                centroids[i].x /= centroids[i].num_points;
-                #pragma omp atomic update
-                centroids[i].y /= centroids[i].num_points;
-                #pragma omp atomic update
-                centroids[i].z /= centroids[i].num_points;
+                centroids[i].x = cumulate_centroids[i].x / cumulate_centroids[i].num_points;
+                centroids[i].y = cumulate_centroids[i].y / cumulate_centroids[i].num_points;
+                centroids[i].z = cumulate_centroids[i].z / cumulate_centroids[i].num_points;
             }
-            iter++;
+            #pragma omp barrier
         }
+        cumulate_centroids.clear();
+        cumulate_centroids.resize(centroids.size(), Centroid(0, 0, 0));
+        iter++;
     }
 
     printf("%d", iter);

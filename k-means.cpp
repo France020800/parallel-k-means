@@ -16,11 +16,12 @@ public:
     int clusterId;
 
 public:
-    Point(double x, double y, double z)
+    Point(double x, double y, double z, int cluster)
     {
         this->x = x;
         this->y = y;
         this->z = z;
+        this->clusterId = cluster;
     }
 };
 
@@ -72,14 +73,14 @@ int main(int argc, char const *argv[])
     }
 
     // Define the distribution
-    uniform_real_distribution<double> distribution(0.0, 1000000.0);
+    uniform_real_distribution<double> distribution(0.0, 1000.0);
 
     // Create a random list of num_point points
     int num_points = atoi(argv[2]);
     vector<Point> points;
     for (int i = 0; i < num_points; i++)
     {
-        points.push_back(Point(distribution(gen), distribution(gen), distribution(gen)));
+        points.push_back(Point(distribution(gen), distribution(gen), distribution(gen), -2));
     }
 
     // Create k random centroids
@@ -93,6 +94,10 @@ int main(int argc, char const *argv[])
                                      points[random_index].y,
                                      points[random_index].z));
     }
+
+    vector<Centroid> cumulate_centroids;
+    for (int i = 0; i < K; i++)
+    cumulate_centroids.resize(K, Centroid(0, 0, 0));
 
     // Start the timer
     // auto start = chrono::high_resolution_clock::now();
@@ -123,23 +128,23 @@ int main(int argc, char const *argv[])
                 changed = true;
             }
 
-            centroids[centroid_index].x = centroids[centroid_index].x + points[i].x;
-            centroids[centroid_index].y = centroids[centroid_index].y + points[i].y;
-            centroids[centroid_index].z = centroids[centroid_index].z + points[i].z;
-            centroids[centroid_index].num_points += 1;
+            cumulate_centroids[centroid_index].x += points[i].x;
+            cumulate_centroids[centroid_index].y += points[i].y;
+            cumulate_centroids[centroid_index].z += points[i].z;
+            cumulate_centroids[centroid_index].num_points += 1;
         }
         if (changed)
         {
-            centroids = vector<Centroid>(K, Centroid(0, 0, 0));
-
             for (int i = 0; i < centroids.size(); i++)
             {
-                centroids[i].x /= centroids[i].num_points;
-                centroids[i].y /= centroids[i].num_points;
-                centroids[i].z /= centroids[i].num_points;
+                centroids[i].x = cumulate_centroids[i].x / cumulate_centroids[i].num_points;
+                centroids[i].y = cumulate_centroids[i].y / cumulate_centroids[i].num_points;
+                centroids[i].z = cumulate_centroids[i].z / cumulate_centroids[i].num_points;
             }
             iter++;
         }
+        cumulate_centroids.clear();
+        cumulate_centroids.resize(centroids.size(), Centroid(0, 0, 0));
     }
 
     printf("%d", iter);
