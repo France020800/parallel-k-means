@@ -5,14 +5,14 @@ import matplotlib.pyplot as plt
 
 def run_sequential(random_seed):
     start = time.time()
-    result = subprocess.run(['./bin/k-means', '10', '10000', str(random_seed)], stdout=subprocess.PIPE, text=True)
+    result = subprocess.run(['./bin/k-means', '10', '1000000', str(random_seed)], stdout=subprocess.PIPE, text=True)
     end = time.time()
     output = result.stdout.strip()
     return output, round(end - start, 4)
 
 def run_parallel(random_seed, num_threads):
     start = time.time()
-    result = subprocess.run(['./bin/parallel-k-means', '10',  '10000', str(random_seed), str(num_threads)], stdout=subprocess.PIPE, text=True)
+    result = subprocess.run(['./bin/parallel-k-means', '10',  '1000000', str(random_seed), str(num_threads)], stdout=subprocess.PIPE, text=True)
     end = time.time()
     output = result.stdout.strip()
     return output, round(end - start, 4)

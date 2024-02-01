@@ -116,7 +116,7 @@ int main(int argc, char const *argv[])
     while (changed)
     {
         changed = false;
-        #pragma omp parallel for shared(centroids, cumulate_centroids, points) reduction(||:changed)
+        #pragma omp parallel for shared(points, centroids, cumulate_centroids, changed)
         for (int i = 0; i < points.size(); i++)
         {
             double min_distance = INFINITY;
@@ -134,30 +134,34 @@ int main(int argc, char const *argv[])
             }
             if (centroid_index != points[i].clusterId)
             {
+                #pragma omp atomic write
                 points[i].clusterId = centroid_index;
+                #pragma omp atomic write
                 changed = true;
             }
 
+            #pragma omp atomic
             cumulate_centroids[centroid_index].x += points[i].x;
+            #pragma omp atomic
             cumulate_centroids[centroid_index].y += points[i].y;
+            #pragma omp atomic
             cumulate_centroids[centroid_index].z += points[i].z;
+            #pragma omp atomic 
             cumulate_centroids[centroid_index].num_points += 1;
         }
-        #pragma omp barrier
         if (changed)
         {
-            #pragma omp parallel for
+            #pragma omp parallel for shared(centroids, cumulate_centroids)
             for (int i = 0; i < centroids.size(); i++)
             {
                 centroids[i].x = cumulate_centroids[i].x / cumulate_centroids[i].num_points;
                 centroids[i].y = cumulate_centroids[i].y / cumulate_centroids[i].num_points;
                 centroids[i].z = cumulate_centroids[i].z / cumulate_centroids[i].num_points;
             }
-            #pragma omp barrier
+            iter++;
         }
         cumulate_centroids.clear();
         cumulate_centroids.resize(centroids.size(), Centroid(0, 0, 0));
-        iter++;
     }
 
     printf("%d", iter);
