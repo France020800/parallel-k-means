@@ -100,7 +100,7 @@ int main(int argc, char const *argv[])
     cumulate_centroids.resize(K, Centroid(0, 0, 0));
 
     // Start the timer
-    // auto start = chrono::high_resolution_clock::now();
+    auto start = chrono::high_resolution_clock::now();
 
     int iter = 0;
     bool changed = true;
@@ -147,7 +147,9 @@ int main(int argc, char const *argv[])
         cumulate_centroids.resize(centroids.size(), Centroid(0, 0, 0));
     }
 
-    printf("%d", iter);
+    auto end = chrono::high_resolution_clock::now();
+    chrono::duration<double> elapsed = end - start;
+    printf("%f", elapsed.count());
 
     return 0;
 }

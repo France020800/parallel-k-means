@@ -83,7 +83,7 @@ int main(int argc, char const *argv[])
         int num_threads = omp_get_max_threads();
         omp_set_num_threads(num_threads);
     }
-    printf("Number of threads: %d\n", omp_get_max_threads());
+    //printf("Number of threads: %d\n", omp_get_max_threads());
 
     // Define the distribution
     uniform_real_distribution<double> distribution(0.0, 1000.0);
@@ -111,6 +111,8 @@ int main(int argc, char const *argv[])
     vector<Centroid> cumulate_centroids;
     cumulate_centroids.resize(K, Centroid(0, 0, 0));
     
+    auto start = chrono::high_resolution_clock::now();
+
     int iter = 0;
     bool changed = true;
     while (changed)
@@ -164,7 +166,9 @@ int main(int argc, char const *argv[])
         cumulate_centroids.resize(centroids.size(), Centroid(0, 0, 0));
     }
 
-    printf("%d", iter);
+    auto end = chrono::high_resolution_clock::now();
+    chrono::duration<double> elapsed = end - start;
+    printf("%f\n", elapsed.count());
 
     return 0;
 }
