@@ -153,7 +153,7 @@ int main(int argc, char const *argv[])
         }
         if (changed)
         {
-            #pragma omp parallel for shared(centroids, cumulate_centroids)
+            //#pragma omp parallel for shared(centroids, cumulate_centroids)
             for (int i = 0; i < centroids.size(); i++)
             {
                 centroids[i].x = cumulate_centroids[i].x / cumulate_centroids[i].num_points;
