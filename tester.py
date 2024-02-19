@@ -1,6 +1,4 @@
 import subprocess
-import time
-import random
 import matplotlib.pyplot as plt
 
 def run_sequential(random_seed):
