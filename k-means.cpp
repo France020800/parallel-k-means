@@ -149,7 +149,7 @@ int main(int argc, char const *argv[])
     auto end = chrono::high_resolution_clock::now();
     chrono::duration<double> elapsed = end - start;
     printf("%f\n", elapsed.count());
-    printf("%d", iter);
+    //printf("%d", iter);
 
     return 0;
 }
