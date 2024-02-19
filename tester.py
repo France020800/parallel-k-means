@@ -5,12 +5,12 @@ import matplotlib.pyplot as plt
 def run_sequential(random_seed):
     result = subprocess.run(['./bin/k-means', '10', '1000000', str(random_seed)], stdout=subprocess.PIPE, text=True)
     output = result.stdout.strip()
-    return output
+    return round(float(output), 4)
 
 def run_parallel(random_seed, num_threads):
     result = subprocess.run(['./bin/parallel-k-means', '10',  '1000000', str(random_seed), str(num_threads)], stdout=subprocess.PIPE, text=True)
     output = result.stdout.strip()
-    return output
+    return round(float(output), 4)
 
 # Create the environment
 os.system('mkdir bin')
@@ -20,12 +20,12 @@ os.system('g++ -o bin/k-means k-means.cpp')
 print('Compilation finished')
 
 # List to save results
-speedups = []
+speedups = [1]
 # Generate a random seed
 seed = 42
 sequential_time = run_sequential(seed)
 print(f'Sequential time: {sequential_time}')
-for i in range(1, 10):
+for i in range(2, 10):
     parallel_time = run_parallel(seed, i)
     speedups.append(round(sequential_time/parallel_time, 4))
     print(f'Speedup: {speedups[i-1]}\nThreads number: {i}')
