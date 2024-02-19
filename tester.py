@@ -13,9 +13,11 @@ def run_parallel(random_seed, num_threads):
     return output
 
 # Create the environment
-os.system('makedir bin')
+os.system('mkdir bin')
+print('Compiling...')
 os.system('g++ -o bin/parallel-k-means -fopenmp parallel-k-means.cpp')
 os.system('g++ -o bin/k-means k-means.cpp')
+print('Compilation finished')
 
 # List to save results
 speedups = []
