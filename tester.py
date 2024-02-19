@@ -1,6 +1,5 @@
 import subprocess
-import time
-import random
+import os
 import matplotlib.pyplot as plt
 
 def run_sequential(random_seed):
@@ -12,6 +11,11 @@ def run_parallel(random_seed, num_threads):
     result = subprocess.run(['./bin/parallel-k-means', '10',  '1000000', str(random_seed), str(num_threads)], stdout=subprocess.PIPE, text=True)
     output = result.stdout.strip()
     return output
+
+# Create the environment
+os.system('makedir bin')
+os.system('g++ -o bin/parallel-k-means -fopenmp parallel-k-means.cpp')
+os.system('g++ -o bin/k-means k-means.cpp')
 
 # List to save results
 speedups = []

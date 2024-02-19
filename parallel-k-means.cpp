@@ -83,7 +83,7 @@ int main(int argc, char const *argv[])
         int num_threads = omp_get_max_threads();
         omp_set_num_threads(num_threads);
     }
-    printf("Number of threads: %d\n", omp_get_max_threads());
+    //printf("Number of threads: %d\n", omp_get_max_threads());
 
     // Define the distribution
     uniform_real_distribution<double> distribution(0.0, 1000.0);
